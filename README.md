@@ -2,7 +2,7 @@
 
 Polars is a fast, open-source DataFrame library for Python. Its core is written in Rust and built on the Apache Arrow columnar memory format, so it is both quick and memory-efficient. This opinionated guide presents best practices for writing Polars expressions that are readable and efficient. It is inspired by the [PySpark Style Guide](https://github.com/palantir/pyspark-style-guide) developed by Palantir.
 
-# Prefer `pl.col` syntax over direct access
+## Prefer `pl.col` syntax over direct access
 
 Mixing plain column-name strings with `pl.col(...)` expressions in the same call leads to inconsistent code. Plain strings work fine in a simple `select`, but as soon as one column needs a transformation, like a cast, the rest of the list ends up in a different style. Wrapping every column in `pl.col` keeps the call uniform: every item is an expression, and adding a transformation later is a small change rather than a rewrite.
 
@@ -24,7 +24,7 @@ df.select(
 )
 ```
 
-# Prefer functions for logical groups of expressions
+## Prefer functions for logical groups of expressions
 
 When a set of expressions belongs together, such as cleaning a group of related columns or deriving a family of flags, wrap them in a named function that takes a DataFrame and returns one. The function name documents intent, the group can be tested on its own, and the calling pipeline reads like a list of steps. Keep each function focused on one logical step so it stays easy to reason about.
 
@@ -45,7 +45,7 @@ def add_order_total(df: pl.DataFrame) -> pl.DataFrame:
 orders_with_totals = orders_df.pipe(add_order_total)
 ```
 
-# Use `pipe` expressions to combine transformation functions
+## Use `pipe` expressions to combine transformation functions
 
 `DataFrame.pipe` passes a DataFrame into a function and returns the result, which lets you chain transformation functions from top to bottom, like a recipe. Each step stays a named unit, and you don't need intermediate variables to hold the state between them.
 
@@ -64,7 +64,7 @@ result = (
 )
 ```
 
-# Choose between `pipe` and direct function calls to illustrate data flow when joining dataframes
+## Choose between `pipe` and direct function calls to illustrate data flow when joining dataframes
 
 When joining DataFrames, consider using `pipe` when a minor table is joined onto a major table and the major table is not fundamentally changed by the join. Consider using the direct function invocation when both tables are of equal importance and the result is a qualitatively different table.
 
@@ -82,7 +82,7 @@ def merge_sources(internal: pl.DataFrame, vendor: pl.DataFrame) -> pl.DataFrame:
 merge_sources(internal_df, external_df)
 ```
 
-# Avoid reassigning variable names
+## Avoid reassigning variable names
 
 Reusing a name like `df` means the value behind it keeps changing. When something goes wrong, you can't inspect an earlier stage without rerunning the code from the top, which makes debugging painful. Give each stage its own name so every intermediate result stays available for inspection.
 
@@ -94,7 +94,7 @@ df = df.pipe(transform)
 transformed_df = df.pipe(transform)
 ```
 
-# Use `select` statements to specify a schema contract
+## Use `select` statements to specify a schema contract
 
 A `select` defines the exact set of columns that comes out of it, so it works as a contract for the output schema. Using it to add new columns blurs that contract. Instead, use `.with_columns()`, which says "add or modify these and keep everything else", and makes your intent clear to the reader.
 
@@ -113,7 +113,7 @@ df.with_columns(
 )
 ```
 
-# Refactor complex logical operations
+## Refactor complex logical operations
 
 Long, nested boolean conditions are hard to read and even harder to verify. Give the individual pieces meaningful names, then combine them. The named version reads almost like a sentence, and each part can be checked on its own.
 
@@ -138,7 +138,7 @@ df.with_columns(
 )
 ```
 
-# Use `pl.lit(None)` for empty columns
+## Use `pl.lit(None)` for empty columns
 
 Never use an empty string or another placeholder string that signals an empty value, such as `NA`. Those look like real data, so they get treated as values: an empty string is a legitimate string, and `"NA"` survives casts, joins and filters as text. `None` is a proper null that Polars understands in filters, aggregations and `is_null` checks, so missing data stays missing.
 
@@ -153,7 +153,7 @@ df.with_columns(pl.lit("NA").alias("foo"))
 df.with_columns(pl.lit(None).alias("foo"))
 ```
 
-# Using comments
+## Using comments
 
 Comments can provide useful insight into code, but it is often more valuable to refactor the code so it explains itself. If a block needs a comment to make sense, consider moving it into a function with a docstring instead. When you do write a comment, skip the ones that merely restate the logic you wrote. Aim for context that explains the *why* behind your decisions, since that is the part the code itself can't show.
 
@@ -172,7 +172,7 @@ orders_with_totals = orders_df.with_columns(
 )
 ```
 
-# User Defined Functions (UDF)
+## User Defined Functions (UDF)
 
 It is highly recommended to avoid UDFs, whether they come from `.map_elements()` or from iterating over rows. They are dramatically less performant than native Polars because they drop out of the optimized, multi-threaded engine and run Python for every value. In most situations, logic that seems to call for a UDF can be refactored to use only native Polars expressions, so check that option first.
 
@@ -188,7 +188,7 @@ df.with_columns(
 )
 ```
 
-# Joins
+## Joins
 
 Always specify the type of join explicitly, for example `how='inner'`. Relying on defaults makes it harder to see what the join is supposed to do.
 
@@ -205,7 +205,7 @@ orders_df.join(
 
 Avoid `right` joins. Flipping the tables and using a `left` join expresses the same thing, and keeping the main table on the left makes the pipeline easier to follow.
 
-# Multi-line expressions
+## Multi-line expressions
 
 Wrap the entire expression in a single set of parentheses instead of using a `\` at the end of each line. Parentheses let Polars chains span multiple lines cleanly, while backslashes are fragile: a single trailing space after one breaks the whole statement.
 
@@ -223,7 +223,7 @@ df = (
 )
 ```
 
-# Prefer LazyFrames over DataFrames
+## Prefer LazyFrames over DataFrames
 
 LazyFrames let Polars plan the whole query before running it, and that is what makes the streaming engine (`.collect(engine='streaming')`) possible. The streaming engine processes data in chunks, so datasets larger than memory can be handled safely. For this reason, prefer LazyFrames over DataFrames by default.
 
@@ -244,7 +244,7 @@ result = (
 
 Only use DataFrames for ad hoc analysis, where seeing the immediate result of each transformation is convenient and where you have confirmed that the data is small enough to be safe.
 
-# Use selectors for batch transformations
+## Use selectors for batch transformations
 
 Selectors let you pick columns by their properties, such as their dtype or name pattern, instead of listing them one by one. They have many uses and should be used in many cases. The `polars.selectors` module is conventionally imported as `cs`.
 
