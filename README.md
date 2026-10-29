@@ -1,2 +1,2 @@
-# polars-style-guide
+# Polars Style Guide
 Polars Style Guide
